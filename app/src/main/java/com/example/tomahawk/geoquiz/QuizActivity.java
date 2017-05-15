@@ -58,7 +58,8 @@ public class QuizActivity extends AppCompatActivity {
      * Challenge complete, very easy...
      */
 
-    //Testing adding a second upstream from a Android project to a second repository on the Github
+    //Testing adding a second upstream from a Android project to a second repository on the github,
+    // It is safe to assume it worked, but there has to be an easier way to copy a repository and keep it synced.
 
     private Question[] mQuestionBank = new Question[] { // An array of question objects
             new Question(R.string.question_australia, true),
