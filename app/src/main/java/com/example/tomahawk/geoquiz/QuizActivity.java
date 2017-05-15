@@ -58,7 +58,7 @@ public class QuizActivity extends AppCompatActivity {
      * Challenge complete, very easy...
      */
 
-    //Testing adding a second upstream from a Android project to a second repository on github
+    //Testing adding a second upstream from a Android project to a second repository on the Github
 
     private Question[] mQuestionBank = new Question[] { // An array of question objects
             new Question(R.string.question_australia, true),
