@@ -1,5 +1,7 @@
 package com.example.tomahawk.geoquiz;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.icu.text.DecimalFormat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -15,15 +17,18 @@ public class QuizActivity extends AppCompatActivity {
 
     private static final String TAG = "QuizActivity";
     private static final String KEY_INDEX = "index";
+    private static final int REQUEST_CODE_CHEAT = 0;
     private static final String QUESTION_LIST = "question_list";
 
     private Button mTrueButton;
     private Button mFalseButton;
     private Button mNextButton;
     private Button mBackButton;
+    private Button mCheatButton;
     private TextView mQuestionTextView;
 
     private int mCurrentIndex = 0;
+    private boolean mIsCheater;
     private double Correct = 0;
     private int TotalAnswered = 0;
     private double Score = 0;
@@ -58,8 +63,8 @@ public class QuizActivity extends AppCompatActivity {
      * Challenge complete, very easy...
      */
 
-    //Testing adding a second upstream from a Android project to a second repository on the github,
-    // It is safe to assume it worked, but there has to be an easier way to copy a repository and keep it synced.
+    // This was a pretty basic app that re-wet my feet from the first book to here...
+    // This app is done, it can be tweeked in many ways
 
     private Question[] mQuestionBank = new Question[] { // An array of question objects
             new Question(R.string.question_australia, true),
@@ -129,11 +134,23 @@ public class QuizActivity extends AppCompatActivity {
             public void onClick(View v){
                 Log.d(TAG, "Next Button listener");
                 mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length; // Calculates question index
-                int question = mQuestionBank[mCurrentIndex].getTextResId(); // Uses index to extract res id and sets to question
-                mQuestionTextView.setText(question); // Uses question (the text res id), to set text to the textView
+                //int question = mQuestionBank[mCurrentIndex].getTextResId(); // Uses index to extract res id and sets to question
+                //mQuestionTextView.setText(question); // Uses question (the text res id), to set text to the textView
+                mIsCheater = false;
+                updateQuestion(); // Call to the update method and clean up code from inside the onClickListener
                 /**
-                setButtons();
+                setButtons(); // Update required to enable/disable buttons according to mCurrentIndex
                 */
+            }
+        });
+
+        mCheatButton = (Button) findViewById(R.id.cheat_button); // Allows the user to cheat if they want to
+        mCheatButton.setOnClickListener(new View.OnClickListener(){ // If they click cheat then it starts a new activity to display the answer
+            public void onClick(View v){
+                boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
+                Intent tent = CheatActivity.newIntent(QuizActivity.this, answerIsTrue); // Calling the cheat intent method, this is how the info gets passed
+                //startActivity(tent); // Starting the activity with the intent
+                startActivityForResult(tent, REQUEST_CODE_CHEAT);// Starting activity with ForResult, allows info to be passed back to the parent activity
             }
         });
 
@@ -148,16 +165,32 @@ public class QuizActivity extends AppCompatActivity {
                     mCurrentIndex = 0;
                 } else {
                     mCurrentIndex = (mCurrentIndex - 1) % mQuestionBank.length;
-                    int question = mQuestionBank[mCurrentIndex].getTextResId();
-                    mQuestionTextView.setText(question);
+                    //int question = mQuestionBank[mCurrentIndex].getTextResId();
+                    //mQuestionTextView.setText(question);
+                    updateQuestion(); // Call to the update method to clean up code and further abstract our logic
                 }
                 /**
-                setButtons();
+                setButtons(); // Update required to enable/disable buttons according to mCurrentIndex
                 */
             }
         });
 
         updateQuestion(); // Call to the updateQuestion method
+    }
+
+    // This method handles decoding the results from the CheatActivity, this is how the activities communicate and "do things" based on that communication
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data){
+        if(resultCode != Activity.RESULT_OK){
+            return;
+        }
+
+        if(requestCode == REQUEST_CODE_CHEAT){
+            if(data == null){
+                return;
+            }
+            mIsCheater = CheatActivity.wasAnswerShown(data);
+        }
     }
 
     /**
@@ -191,20 +224,24 @@ public class QuizActivity extends AppCompatActivity {
 
        int messageResId = 0;
 
-       if(userPressedTrue == answerIsTrue){ // Logic to check if user answered correctly
-           /**
-           mQuestionBank[mCurrentIndex].setAnswered(true);
-           Correct += 1;
-           TotalAnswered += 1;
-           */
-            messageResId = R.string.correct_toast;
+       if(mIsCheater){
+           messageResId = R.string.judgment_toast;
        } else {
-           /**
-           mQuestionBank[mCurrentIndex].setAnswered(true);
-           TotalAnswered += 1;
-           */
-            messageResId = R.string.wrong_toast;
-       }
+           if (userPressedTrue == answerIsTrue) { // Logic to check if user answered correctly
+               /**
+                mQuestionBank[mCurrentIndex].setAnswered(true);
+                Correct += 1;
+                TotalAnswered += 1;
+                */
+               messageResId = R.string.correct_toast;
+           } else {
+               /**
+                mQuestionBank[mCurrentIndex].setAnswered(true);
+                TotalAnswered += 1;
+                */
+               messageResId = R.string.wrong_toast;
+           }
+         }
        /**
        setButtons();
        checkScore();
@@ -251,8 +288,10 @@ public class QuizActivity extends AppCompatActivity {
 
         /**
         // To save the answered questions upon onDestroy() method being called
+         // Boolean array to store the true/false attributes (not to be confused with widget attributes), of the questions set to the length of question bank
         boolean[] mQuestionAnswerArray = new boolean[mQuestionBank.length];
         for(int i = 0; i < mQuestionBank.length; i++){
+         // For loop iterates through question bank at given index and gets the answer and sets it in the array
             mQuestionAnswerArray[i] = mQuestionBank[i].getAnswered();
             Log.d(TAG, " inside for loop onSaveInstanceState");
         }
